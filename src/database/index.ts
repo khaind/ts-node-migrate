@@ -1,14 +1,33 @@
+import { MongoClient } from 'mongodb';
 import { IConfiguration } from '../configuration';
 import { log } from '../log';
 
-interface IDBClient {
-  // TODO
+enum DbType {
+  MONGO = 'mongodb',
+  MYSQL = 'mysql',
 }
 
-const createConnection = async (config: IConfiguration): Promise<IDBClient> => {
-  log(`connection created from config ${config}`);
-  // TODO
-  return {};
+type DbConnection = MongoClient | undefined;
+
+const createConnection = async (
+  config: IConfiguration,
+): Promise<DbConnection> => {
+  let client: DbConnection;
+  try {
+    switch (config.type) {
+      case DbType.MONGO: {
+        client = new MongoClient(config.url, {
+          useUnifiedTopology: true,
+        });
+        log('Connection created!');
+        break;
+      }
+    }
+  } catch (error) {
+    error('Failed to connect to database.');
+  } finally {
+    return client;
+  }
 };
 
-export { IDBClient, createConnection };
+export { DbConnection, createConnection };

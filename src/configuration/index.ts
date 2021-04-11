@@ -10,7 +10,7 @@ interface IConfiguration {
 const loadConfiguration = (): IConfiguration => {
   let config = {
     url: process.env.TSNM_URL as string,
-    type: (process.env.TSNM_TYPE as string) || 'mongodb',
+    type: (process.env.TSNM_DB_TYPE as string) || 'mongodb',
     dir: (process.env.TSNM_DIR as string) || 'migrations',
     tableName: (process.env.TSNM_TABLE_NAME as string) || 'tsnm_changelog',
   };

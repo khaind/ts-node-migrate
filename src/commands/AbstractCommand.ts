@@ -1,14 +1,19 @@
 import { IConfiguration } from '../configuration';
-import { IDBClient, createConnection } from '../database';
+import { DbConnection, createConnection } from '../database';
 
 export abstract class AbstractCommand {
-  client: IDBClient;
+  client: DbConnection;
+  configuration: IConfiguration;
   /**
    *
    */
   constructor(config: IConfiguration) {
-    this.client = createConnection(config);
+    this.configuration = config;
   }
 
-  abstract execute(): Promise<boolean>;
+  async init() {
+    this.client = await createConnection(this.configuration);
+  }
+
+  abstract run(): Promise<boolean>;
 }

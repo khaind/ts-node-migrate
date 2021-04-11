@@ -2,7 +2,7 @@ import { IConfiguration } from '../configuration';
 import { log } from '../log';
 import { AbstractCommand } from './AbstractCommand';
 
-export class CheckCommand extends AbstractCommand {
+export class DownCommand extends AbstractCommand {
   /**
    *
    */
@@ -11,7 +11,7 @@ export class CheckCommand extends AbstractCommand {
   }
 
   public async run(): Promise<boolean> {
-    log('Checking status ...');
+    log('Downgrade database...');
     if (this.client) {
       await this.client.connect();
 

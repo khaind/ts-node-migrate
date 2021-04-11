@@ -1,46 +1,64 @@
 import { Command } from 'commander';
-import { CheckCommand } from './commands';
+import { CheckCommand, DownCommand, NewCommand, UpCommand } from './commands';
 import { loadConfiguration } from './configuration';
 import { error, log } from './log';
 
-const program = new Command();
 const config = loadConfiguration();
+// TODO validate config
+log(`config loaded ${JSON.stringify(config)}`);
+
+const program = new Command();
 
 program
   .command('new')
   .description('Creates new migration template')
-  .action(() => {
-    log('New migration');
-    // TODO
+  .action(async () => {
+    let task = new NewCommand(config);
+    await task.init();
+    if (await task.run()) {
+      log('Succeed!!!');
+    } else {
+      error('Failed to create new migration file.');
+    }
   });
 
 program
   .command('status', { isDefault: true })
   .description('Verify migration status')
   .action(async () => {
-    log(`config loaded ${JSON.stringify(config)}`);
     let task = new CheckCommand(config);
-    if (await task.execute()) {
+    await task.init();
+    if (await task.run()) {
       log('Succeed!!!');
     } else {
-      error('Failed to verify migration status');
+      error('Failed to verify migration status.');
     }
   });
 
 program
   .command('up')
   .description('Doing migration forward')
-  .action(() => {
-    log('Up migration');
-    // TODO
+  .action(async () => {
+    let task = new UpCommand(config);
+    await task.init();
+    if (await task.run()) {
+      log('Succeed!!!');
+    } else {
+      error('Failed to upgrade database.');
+    }
   });
 
 program
   .command('down')
   .description('Doing migration backward')
-  .action(() => {
-    log('Down migration');
-    // TODO
+  .action(async () => {
+    let task = new DownCommand(config);
+    await task.init();
+    if (await task.run()) {
+      log('Succeed!!!');
+    } else {
+      error('Failed to downgrade database.');
+    }
   });
 
 program.parse(process.argv);
