@@ -1,5 +1,6 @@
 import { IConfiguration } from '../configuration';
-import { log } from '../log';
+import { error, log } from '../log';
+import { Migrator } from '../migration';
 import { AbstractCommand } from './AbstractCommand';
 
 export class NewCommand extends AbstractCommand {
@@ -11,12 +12,13 @@ export class NewCommand extends AbstractCommand {
   }
 
   public async run(): Promise<boolean> {
-    log('Creating new migration template');
-    if (this.client) {
-      await this.client.connect();
-
-      await this.client.close();
+    try {
+      log('Creating new migration template');
+      const migrator = await Migrator.getInstance(this.configuration);
+      return await migrator.new();
+    } catch (err) {
+      error(err);
     }
-    return true;
+    return false;
   }
 }

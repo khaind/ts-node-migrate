@@ -14,7 +14,6 @@ program
   .description('Creates new migration template')
   .action(async () => {
     let task = new NewCommand(config);
-    await task.init();
     if (await task.run()) {
       log('Succeed!!!');
     } else {
@@ -27,7 +26,6 @@ program
   .description('Verify migration status')
   .action(async () => {
     let task = new CheckCommand(config);
-    await task.init();
     if (await task.run()) {
       log('Succeed!!!');
     } else {
@@ -40,7 +38,6 @@ program
   .description('Doing migration forward')
   .action(async () => {
     let task = new UpCommand(config);
-    await task.init();
     if (await task.run()) {
       log('Succeed!!!');
     } else {
@@ -53,7 +50,6 @@ program
   .description('Doing migration backward')
   .action(async () => {
     let task = new DownCommand(config);
-    await task.init();
     if (await task.run()) {
       log('Succeed!!!');
     } else {

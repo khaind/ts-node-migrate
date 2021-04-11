@@ -1,5 +1,6 @@
 import { IConfiguration } from '../configuration';
-import { log } from '../log';
+import { error, log } from '../log';
+import { Migrator } from '../migration';
 import { AbstractCommand } from './AbstractCommand';
 
 export class CheckCommand extends AbstractCommand {
@@ -11,12 +12,13 @@ export class CheckCommand extends AbstractCommand {
   }
 
   public async run(): Promise<boolean> {
-    log('Checking status ...');
-    if (this.client) {
-      await this.client.connect();
-
-      await this.client.close();
+    try {
+      log('Checking status ...');
+      const migrator = await Migrator.getInstance(this.configuration);
+      return await migrator.check();
+    } catch (err) {
+      error(err);
     }
-    return true;
+    return false;
   }
 }
