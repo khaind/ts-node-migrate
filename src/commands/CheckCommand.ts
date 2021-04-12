@@ -14,7 +14,7 @@ export class CheckCommand extends AbstractCommand {
   public async run(): Promise<boolean> {
     try {
       log('Checking status ...');
-      const migrator = await Migrator.getInstance(this.configuration);
+      const migrator = Migrator.getInstance(this.configuration);
       return await migrator.check();
     } catch (err) {
       error(err);

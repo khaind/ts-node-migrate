@@ -14,7 +14,7 @@ export class UpCommand extends AbstractCommand {
   public async run(): Promise<boolean> {
     try {
       log('Upgrade database ...');
-      const migrator = await Migrator.getInstance(this.configuration);
+      const migrator = Migrator.getInstance(this.configuration);
       return await migrator.up();
     } catch (err) {
       error(err);

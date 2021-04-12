@@ -16,4 +16,8 @@ const error = (msg: string) => {
   console.error(chalk.red(msg));
 };
 
-export { log, warn, error, info };
+const debug = (msg: string) => {
+  console.debug(chalk.black(msg));
+};
+
+export { log, warn, error, info, debug };

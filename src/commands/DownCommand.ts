@@ -14,7 +14,7 @@ export class DownCommand extends AbstractCommand {
   public async run(): Promise<boolean> {
     try {
       log('Downgrade database...');
-      const migrator = await Migrator.getInstance(this.configuration);
+      const migrator = Migrator.getInstance(this.configuration);
       return await migrator.down();
     } catch (err) {
       error(err);

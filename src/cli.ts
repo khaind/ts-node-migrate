@@ -10,10 +10,11 @@ log(`config loaded ${JSON.stringify(config)}`);
 const program = new Command();
 
 program
-  .command('new')
-  .description('Creates new migration template')
-  .action(async () => {
-    let task = new NewCommand(config);
+  .command('new [name]')
+  .description('Creates new named(optional) migration template')
+  .action(async (name: string) => {
+    console.log(JSON.stringify(name));
+    let task = new NewCommand(config, name);
     if (await task.run()) {
       log('Succeed!!!');
     } else {
