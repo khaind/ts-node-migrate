@@ -1,8 +1,10 @@
 import { MigrationModel } from '.';
 import { IConfiguration } from '../configuration';
 import { createConnection, IDbConnection } from '../database';
-import { debug, error, info, log } from '../log';
+import { debug, error, info, log, warn } from '../log';
 import fs from 'fs';
+import { MigrationFile } from './Migration';
+import path from 'path';
 
 /**
  * Migrator is a controller object and implementing as a singleton
@@ -31,29 +33,68 @@ export class Migrator {
     try {
       this.dbConnection = await createConnection(this.configuration);
       await this.dbConnection!.connect();
-      const migrations = await this.dbConnection!.listMigrations();
+      const dbMigrations = await this.dbConnection!.listMigrations();
       await this.dbConnection!.close();
 
-      fs.readdirSync(this.configuration.dir).forEach((file) => {
-        console.log(file);
-      });
+      const fileMigrations = this.listFileMigrations();
 
-      info('\nMigration list.');
-      info('----------------------------------------------');
-      info(`#\tstatus\t\ttimestamp\t\tname`);
-      migrations.map((m, index) => {
-        info(`${index + 1}\tPENDING\t\t${m.timestamp}\t\t${m.name}`);
-      });
-      info('----------------------------------------------');
+      this.printMigrationStatus(fileMigrations, dbMigrations);
     } catch (err) {
       error(`check(): ${JSON.stringify(err)}`);
     }
     return true;
   }
 
+  private listFileMigrations(): MigrationFile[] {
+    let files: MigrationFile[] = [];
+    fs.readdirSync(this.configuration.dir).forEach((file) => {
+      if (this.isValidMigrationFile(file)) {
+        const fileName = path.basename(file, path.extname(file));
+        const [timestamp, name] = fileName.split('_');
+        files.push({
+          name,
+          timestamp: parseInt(timestamp),
+        });
+      } else {
+        warn(
+          `Invalid migration file name ${file}. A typical correct is 1618328287798_AValidFileName.ts`,
+        );
+      }
+    });
+    return files;
+  }
+
+  private isValidMigrationFile(file: string): boolean {
+    return /^[0-9]{13}_[a-zA-Z]+.ts$/gm.test(file);
+  }
+
+  private printMigrationStatus(
+    fileMigrations: MigrationFile[],
+    dbMigrations: MigrationModel[],
+  ) {
+    info('\nMigration list.');
+    info('-------------------------------------------------------------');
+    info(`#\tstatus\t\ttimestamp\t\tname`);
+    fileMigrations.map((m, index) => {
+      const isUpgraded = dbMigrations.find(
+        (dbM) => dbM.timestamp === m.timestamp && dbM.name === m.name,
+      );
+      log(
+        `${index + 1}\t${isUpgraded ? 'Up' : 'Pending'}\t\t${m.timestamp}\t\t${
+          m.name
+        }`,
+      );
+    });
+    info('-------------------------------------------------------------');
+  }
+
   public async new(name: string): Promise<boolean> {
     try {
       this.createFolderIfNotExists(this.configuration.dir);
+      if (!/^[a-zA-Z]+$/gm.test(name)) {
+        error('Invalid file name which should contain letter only.');
+        return false;
+      }
       return this.createNewMigrationFiles(this.configuration.dir, name);
     } catch (err) {
       error(`check(): ${JSON.stringify(err)}`);
@@ -104,13 +145,25 @@ import { MigrationInterface } from 'ts-mongo-migrate';
   public async up(): Promise<boolean> {
     try {
       this.dbConnection = await createConnection(this.configuration);
-      // TODO run upgrade
       await this.dbConnection!.connect();
 
-      // const migrations = await this.dbConnection!.addMigration({
-      //   timestamp: new Date().getTime(),
-      //   name: 'testMIgation',
-      // });
+      const dbMigrations = await this.dbConnection!.listMigrations();
+      const fileMigrations = this.listFileMigrations();
+
+      for (let m of fileMigrations) {
+        const isUpgraded = !!dbMigrations.find(
+          (dbM) => dbM.timestamp === m.timestamp && dbM.name === m.name,
+        );
+
+        if (!isUpgraded) {
+          // TODO run upgrade
+          await Migrator.instance.dbConnection!.addMigration({
+            timestamp: m.timestamp,
+            name: m.name,
+          });
+          info(`${m.name} upgraded!`);
+        }
+      }
 
       await this.dbConnection!.close();
     } catch (err) {

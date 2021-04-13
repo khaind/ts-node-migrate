@@ -1,2 +1,2 @@
-export * from './MigrationModel';
+export * from './Migration';
 export * from './Migrator';
