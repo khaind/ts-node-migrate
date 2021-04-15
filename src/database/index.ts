@@ -1,5 +1,5 @@
 import { IConfiguration } from '../configuration';
-import { log } from '../log';
+import { error, log } from '../log';
 import { IDbConnection } from './IDbConnection';
 import { MongoDbConnection } from './MongoDbConnection';
 
@@ -21,10 +21,11 @@ const createConnection = async (
         break;
       }
       default:
-        throw new Error(`Invalid db type: ${config.type}`);
+        throw `Invalid db type: ${config.type}`;
     }
-  } catch (error) {
-    throw new Error(`Failed to connect to database.`);
+  } catch (err) {
+    error(err);
+    throw `Failed to connect to database.`;
   }
   return dbConnection;
 };

@@ -50,7 +50,8 @@ export class Migrator {
     fs.readdirSync(this.configuration.dir).forEach((file) => {
       if (this.isValidMigrationFile(file)) {
         const fileName = path.basename(file, path.extname(file));
-        const [timestamp, name] = fileName.split('_');
+        const [name, timestamp] = fileName.split('_');
+
         files.push({
           name,
           timestamp: parseInt(timestamp),
@@ -65,7 +66,7 @@ export class Migrator {
   }
 
   private isValidMigrationFile(file: string): boolean {
-    return /^[0-9]{13}_[a-zA-Z]+.ts$/gm.test(file);
+    return /^[a-zA-Z]+_[0-9]{13}.ts$/gm.test(file);
   }
 
   private printMigrationStatus(
@@ -75,6 +76,7 @@ export class Migrator {
     info('\nMigration list.');
     info('-------------------------------------------------------------');
     info(`#\tstatus\t\ttimestamp\t\tname`);
+
     fileMigrations.map((m, index) => {
       const isUpgraded = dbMigrations.find(
         (dbM) => dbM.timestamp === m.timestamp && dbM.name === m.name,
@@ -85,16 +87,19 @@ export class Migrator {
         }`,
       );
     });
+
     info('-------------------------------------------------------------');
   }
 
   public async new(name: string): Promise<boolean> {
     try {
       this.createFolderIfNotExists(this.configuration.dir);
+
       if (!/^[a-zA-Z]+$/gm.test(name)) {
         error('Invalid file name which should contain letter only.');
         return false;
       }
+
       return this.createNewMigrationFiles(this.configuration.dir, name);
     } catch (err) {
       error(`check(): ${JSON.stringify(err)}`);
@@ -104,10 +109,14 @@ export class Migrator {
 
   private createNewMigrationFiles(dir: string, name?: string) {
     try {
-      const fileName = `${new Date().getTime()}_${name || 'Migration'}`;
+      const timestamp = new Date().getTime();
+      const fileName = this.generateFileName(timestamp, name);
       const template = this.getMigrationTemplate(fileName);
+
       fs.writeFileSync(`${dir}/${fileName}.ts`, template);
+
       log(`${fileName}.ts written!`);
+
       return true;
     } catch (err) {
       error(err);
@@ -115,19 +124,24 @@ export class Migrator {
     return false;
   }
 
+  private generateFileName(timestamp: number, name?: string) {
+    return `${name || 'Migration'}_${timestamp}`;
+  }
+
   private getMigrationTemplate(className: string) {
-    return `import { Db } from 'mongodb;'
+    // TODO template defined by type
+    return `import { MongoClient } from 'mongodb';
 import { MigrationInterface } from 'ts-mongo-migrate';
 
-  export class ${className} implements MigrationInterface {
-    public async up(db: Db): Promise<void> {
-      // Implement your upgrade logic HERE
-    }
-
-    public async down(db: Db): Promise<void> {
-      // Implement your downgrade logic HERE
-    }
+export class ${className} implements MigrationInterface {
+  public async up(client: MongoClient): Promise<void> {
+    // Implement your upgrade logic HERE
   }
+
+  public async down(client: MongoClient): Promise<void> {
+    // Implement your downgrade logic HERE
+  }
+}
     `;
   }
 
@@ -150,40 +164,88 @@ import { MigrationInterface } from 'ts-mongo-migrate';
       const dbMigrations = await this.dbConnection!.listMigrations();
       const fileMigrations = this.listFileMigrations();
 
+      let isUpgraded = true;
       for (let m of fileMigrations) {
-        const isUpgraded = !!dbMigrations.find(
+        isUpgraded = !!dbMigrations.find(
           (dbM) => dbM.timestamp === m.timestamp && dbM.name === m.name,
         );
 
         if (!isUpgraded) {
-          // TODO run upgrade
+          // Run upgrade
+          let migrationObj = await this.createMigrationObject(m);
+          await migrationObj.up(this.dbConnection.client);
+
           await Migrator.instance.dbConnection!.addMigration({
             timestamp: m.timestamp,
             name: m.name,
           });
+
           info(`${m.name} upgraded!`);
         }
       }
 
+      if (isUpgraded) {
+        info('No new migration found!');
+      }
+
       await this.dbConnection!.close();
+      return true;
     } catch (err) {
-      error(`check(): ${JSON.stringify(err)}`);
+      error(`up(): ${JSON.stringify(err)}`);
+      await this.dbConnection!.close();
     }
-    return true;
+    return false;
+  }
+
+  private async createMigrationObject(migrationFile: MigrationFile) {
+    const fileName = this.generateFileName(
+      migrationFile.timestamp,
+      migrationFile.name,
+    );
+    const absolutePath = path.resolve(
+      `${this.configuration.dir}/${fileName}.ts`,
+    );
+
+    let migrationClass = await import(absolutePath);
+
+    if (!this.isValidMigrationClass(migrationClass, fileName)) {
+      throw 'Invalid migration class Name';
+    }
+
+    let migrationObj = new migrationClass[fileName]();
+    return migrationObj;
+  }
+
+  private isValidMigrationClass(migrationClass: any, fileName: string) {
+    return !!Object.keys(migrationClass).find((k) => k === fileName);
   }
 
   public async down(): Promise<boolean> {
     try {
       this.dbConnection = await createConnection(this.configuration);
-      // TODO run downgrade
       await this.dbConnection!.connect();
 
-      const migrations = await this.dbConnection!.removeLastMigration();
+      const migration = await this.dbConnection!.getLastMigration();
+
+      // Run downgrade
+      let migrationObj = await this.createMigrationObject({
+        name: migration.name,
+        timestamp: migration.timestamp,
+      });
+      await migrationObj.down(this.dbConnection.client);
+
+      await Migrator.instance.dbConnection!.removeMigration(
+        migration.timestamp,
+      );
+
+      info(`${migration.name} downgraded!`);
 
       await this.dbConnection!.close();
+      return true;
     } catch (err) {
-      error(`check(): ${JSON.stringify(err)}`);
+      error(`down(): ${JSON.stringify(err)}`);
+      await this.dbConnection!.close();
     }
-    return true;
+    return false;
   }
 }

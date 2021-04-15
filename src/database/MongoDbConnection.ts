@@ -15,11 +15,12 @@ export class MongoDbConnection implements IDbConnection {
     this.client = new MongoClient(config.url, {
       useUnifiedTopology: true,
     });
-    log('Connection created!');
+    log('Connection set up!');
   }
 
   public async connect(): Promise<boolean> {
     try {
+      log('Connecting to db...');
       await this.client.connect();
       return true;
     } catch (err) {
@@ -30,6 +31,7 @@ export class MongoDbConnection implements IDbConnection {
 
   public async close(): Promise<boolean> {
     try {
+      log('Closing connection to db...');
       await this.client.close();
       return true;
     } catch (err) {
@@ -53,7 +55,14 @@ export class MongoDbConnection implements IDbConnection {
     await migrationCollection.insertOne(migration);
   }
 
-  public async removeLastMigration(): Promise<void> {
+  public async removeMigration(timestamp: number): Promise<void> {
+    const migrationCollection = this.client
+      .db()
+      .collection(this.configuration.tableName);
+    await migrationCollection.deleteOne({ timestamp });
+  }
+
+  public async getLastMigration(): Promise<MigrationModel> {
     const migrationCollection = this.client
       .db()
       .collection(this.configuration.tableName);
@@ -62,6 +71,6 @@ export class MongoDbConnection implements IDbConnection {
       .sort({ timestamp: -1 })
       .limit(1)
       .next();
-    await migrationCollection.deleteOne({ timestamp: lastMigration.timestamp });
+    return lastMigration;
   }
 }
