@@ -206,6 +206,10 @@ export class ${className} implements MigrationInterface {
       `${this.configuration.dir}/${fileName}.ts`,
     );
 
+    if (!fs.existsSync(absolutePath)) {
+      throw `Could not resolve migration file ${absolutePath}`;
+    }
+
     let migrationClass = await import(absolutePath);
 
     if (!this.isValidMigrationClass(migrationClass, fileName)) {
