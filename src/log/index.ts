@@ -25,7 +25,7 @@ const error = (msg: string) => {
   if (typeof msg !== 'string') {
     msg = `${JSON.stringify(msg)}`;
   }
-  console.error(chalk.red(msg));
+  console.log(chalk.red(msg));
 };
 
 const debug = (msg: string) => {

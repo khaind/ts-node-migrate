@@ -16,6 +16,7 @@ export class Migrator {
 
   private constructor(config: IConfiguration) {
     this.configuration = config;
+    this.dbConnection = createConnection(config);
   }
 
   public static getInstance(config: IConfiguration): Migrator {
@@ -31,7 +32,6 @@ export class Migrator {
    */
   public async check(): Promise<boolean> {
     try {
-      this.dbConnection = await createConnection(this.configuration);
       await this.dbConnection!.connect();
       const dbMigrations = await this.dbConnection!.listMigrations();
       await this.dbConnection!.close();
@@ -158,7 +158,6 @@ export class ${className} implements MigrationInterface {
 
   public async up(): Promise<boolean> {
     try {
-      this.dbConnection = await createConnection(this.configuration);
       await this.dbConnection!.connect();
 
       const dbMigrations = await this.dbConnection!.listMigrations();
@@ -222,7 +221,6 @@ export class ${className} implements MigrationInterface {
 
   public async down(): Promise<boolean> {
     try {
-      this.dbConnection = await createConnection(this.configuration);
       await this.dbConnection!.connect();
 
       const migration = await this.dbConnection!.getLastMigration();

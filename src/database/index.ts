@@ -10,9 +10,7 @@ enum DbType {
 
 // type DbConnection = MongoClient | undefined;
 
-const createConnection = async (
-  config: IConfiguration,
-): Promise<IDbConnection> => {
+const createConnection = (config: IConfiguration): IDbConnection => {
   let dbConnection: IDbConnection;
   try {
     switch (config.type) {
@@ -25,7 +23,7 @@ const createConnection = async (
     }
   } catch (err) {
     error(err);
-    throw `Failed to connect to database.`;
+    throw `Failed to create database connection.`;
   }
   return dbConnection;
 };
