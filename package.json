@@ -2,14 +2,15 @@
   "name": "ts-node-migrate",
   "version": "0.1.0",
   "description": "Database migration tool written in typescript",
-  "main": "index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "dev": "ts-node ./src/cli.ts",
+    "dev": "ts-node ./src/bin/index.ts",
     "build": "rimraf ./dist && tsc",
     "test": "jest"
   },
   "bin": {
-    "tsnm": "./cli.js"
+    "tsnm": "./dist/bin/index.js"
   },
   "repository": {
     "type": "git",

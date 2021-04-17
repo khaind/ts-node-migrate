@@ -36,6 +36,7 @@ export class Migrator {
       const dbMigrations = await this.dbConnection!.listMigrations();
       await this.dbConnection!.close();
 
+      this.createFolderIfNotExists(this.configuration.dir);
       const fileMigrations = this.listFileMigrations();
 
       this.printMigrationStatus(fileMigrations, dbMigrations);
@@ -172,7 +173,7 @@ export class ${className} implements MigrationInterface {
         if (!isUpgraded) {
           // Run upgrade
           let migrationObj = await this.createMigrationObject(m);
-          await migrationObj.up(this.dbConnection.client);
+          await migrationObj.up(this.dbConnection!.client);
 
           await Migrator.instance.dbConnection!.addMigration({
             timestamp: m.timestamp,
@@ -230,7 +231,7 @@ export class ${className} implements MigrationInterface {
         name: migration.name,
         timestamp: migration.timestamp,
       });
-      await migrationObj.down(this.dbConnection.client);
+      await migrationObj.down(this.dbConnection!.client);
 
       await Migrator.instance.dbConnection!.removeMigration(
         migration.timestamp,
