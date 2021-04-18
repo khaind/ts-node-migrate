@@ -132,7 +132,7 @@ export class Migrator {
   private getMigrationTemplate(className: string) {
     // TODO template defined by type
     return `import { MongoClient } from 'mongodb';
-import { MigrationInterface } from 'ts-mongo-migrate';
+import { MigrationInterface } from 'ts-node-migrate';
 
 export class ${className} implements MigrationInterface {
   public async up(client: MongoClient): Promise<void> {

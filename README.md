@@ -10,6 +10,7 @@ Support databases:
 
 ## Installation
 ```
+npm i -g ts-node
 npm i ts-node-migrate
 ```
 
